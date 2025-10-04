@@ -1,0 +1,165 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 235 40% 12%;
+    --foreground: 0 0% 98%;
+
+    --card: 235 35% 15%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 235 40% 10%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 240 60% 25%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 180 70% 45%;
+    --secondary-foreground: 0 0% 100%;
+
+    --accent: 160 100% 50%;
+    --accent-foreground: 235 40% 12%;
+
+    --muted: 235 30% 20%;
+    --muted-foreground: 0 0% 70%;
+
+    --destructive: 0 85% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 235 30% 25%;
+    --input: 235 30% 25%;
+    --ring: 160 100% 50%;
+
+    --radius: 0.75rem;
+
+    --gradient-primary: linear-gradient(135deg, hsl(240 60% 25%), hsl(260 55% 35%));
+    --gradient-accent: linear-gradient(135deg, hsl(160 100% 50%), hsl(180 70% 45%));
+    --gradient-subtle: linear-gradient(180deg, hsl(235 40% 12%), hsl(235 40% 8%));
+    
+    --glow-primary: 0 0 40px hsl(160 100% 50% / 0.3);
+    --glow-card: 0 0 60px hsl(160 100% 50% / 0.1);
+    --shadow-elegant: 0 20px 60px -15px hsl(235 40% 5% / 0.5);
+  }
+
+  .light {
+    --background: 0 0% 100%;
+    --foreground: 235 40% 12%;
+
+    --card: 0 0% 98%;
+    --card-foreground: 235 40% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 235 40% 12%;
+
+    --primary: 240 60% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 180 70% 55%;
+    --secondary-foreground: 0 0% 100%;
+
+    --accent: 160 100% 40%;
+    --accent-foreground: 0 0% 100%;
+
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 40%;
+
+    --destructive: 0 85% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 160 100% 40%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(240 60% 45%), hsl(260 55% 55%));
+    --gradient-accent: linear-gradient(135deg, hsl(160 100% 40%), hsl(180 70% 55%));
+    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%), hsl(0 0% 98%));
+    
+    --glow-primary: 0 0 40px hsl(160 100% 40% / 0.2);
+    --glow-card: 0 0 60px hsl(160 100% 40% / 0.08);
+    --shadow-elegant: 0 20px 60px -15px hsl(235 40% 30% / 0.15);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
+  }
+}
+
+@layer utilities {
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+
+  .gradient-subtle {
+    background: var(--gradient-subtle);
+  }
+
+  .glow-accent {
+    box-shadow: var(--glow-primary);
+  }
+
+  .glow-card {
+    box-shadow: var(--glow-card);
+  }
+
+  .shadow-elegant {
+    box-shadow: var(--shadow-elegant);
+  }
+
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+
+  @keyframes glow {
+    from {
+      box-shadow: 0 0 20px hsl(160 100% 50% / 0.2);
+    }
+    to {
+      box-shadow: 0 0 40px hsl(160 100% 50% / 0.4);
+    }
+  }
+
+  @keyframes typing {
+    from {
+      width: 0;
+    }
+    to {
+      width: 100%;
+    }
+  }
+
+  .typing-effect {
+    overflow: hidden;
+    border-right: 3px solid hsl(var(--accent));
+    white-space: nowrap;
+    animation: typing 3s steps(50) 1s 1 normal both, blink 0.75s step-end infinite;
+  }
+
+  @keyframes blink {
+    from, to {
+      border-color: transparent;
+    }
+    50% {
+      border-color: hsl(var(--accent));
+    }
+  }
+}
