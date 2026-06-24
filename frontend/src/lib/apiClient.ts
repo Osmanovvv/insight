@@ -30,7 +30,7 @@ export const tokenStorage = {
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface ApiError {
-    detail: string;
+    detail: unknown;
     status: number;
 }
 

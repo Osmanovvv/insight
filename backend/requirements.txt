@@ -10,7 +10,15 @@ aiohttp
 loguru
 python-dotenv
 pydantic[email]
+pydantic-settings
 websockets
 slowapi
 httpx
 apscheduler
+google-genai
+feedparser
+beautifulsoup4
+lxml
+aiosqlite
+pytest
+pytest-asyncio

@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Insight } from "@/lib/insights-data";
+import { formatDateMSK } from "@/lib/utils";
 import { TrendingUp, TrendingDown, Minus, Share2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -60,7 +61,7 @@ export const InsightDetailModal = ({ insight, open, onOpenChange }: InsightDetai
             <Badge variant="outline" className="border-accent/50">{insight.category}</Badge>
             <span className="text-sm text-muted-foreground">{insight.source}</span>
             <span className="text-sm text-muted-foreground">•</span>
-            <span className="text-sm text-muted-foreground">{insight.date}</span>
+            <span className="text-sm text-muted-foreground">{formatDateMSK(insight.date)}</span>
             <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${config.bgColor}`}>
               <SentimentIcon className={`h-4 w-4 ${config.color}`} />
               <span className={`text-sm ${config.color}`}>{config.label}</span>
@@ -83,16 +84,9 @@ export const InsightDetailModal = ({ insight, open, onOpenChange }: InsightDetai
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold mb-2">💡 Краткая рекомендация</h3>
-                <p className="text-muted-foreground">{insight.recommendation}</p>
+                <h3 className="text-lg font-semibold mb-2">💡 Краткая рекомендация от ИИ</h3>
+                <p className="text-muted-foreground leading-relaxed">{insight.recommendation}</p>
               </div>
-            </div>
-
-            <div className="border-2 border-primary/20 rounded-lg p-6 bg-gradient-to-br from-primary/5 to-accent/5">
-              <h3 className="text-xl font-semibold mb-3 flex items-center gap-2">
-                🤖 AI-анализ и стратегия
-              </h3>
-              <p className="text-muted-foreground leading-relaxed whitespace-pre-line">{insight.detailedAnalysis}</p>
             </div>
 
             {insight.keywords.length > 0 && (

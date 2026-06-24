@@ -44,12 +44,17 @@ async def register(data: UserCreate, db: AsyncSession = Depends(get_db)):
 
 @router.post("/login", response_model=Token)
 async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
-    """Аутентификация — возвращает access + refresh токены."""
-    result = await db.execute(select(Users).where(Users.email == data.email))
+    """Аутентификация — возвращает access + refresh токены. Принимает email ИЛИ username."""
+    result = await db.execute(
+        select(Users).where((Users.email == data.email) | (Users.username == data.email))
+    )
     user: Users | None = result.scalars().first()
 
-    if not user or not verify_password(data.password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Неверный email или пароль")
+    if not user:
+        raise HTTPException(status_code=401, detail="Пользователь не найден")
+
+    if not verify_password(data.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Неверный пароль")
 
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Аккаунт деактивирован")

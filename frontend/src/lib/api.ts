@@ -16,6 +16,12 @@ import type {
     Payment,
     Category,
     Asset,
+    Blog,
+    BlogCreate,
+    BlogUpdate,
+    AdminStats,
+    UserWithSub,
+    SubscriptionInfo,
 } from "./types";
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -75,10 +81,15 @@ export const newsApi = {
 // ── Analysis ──────────────────────────────────────────────────────────────────
 
 export const analysisApi = {
-    list: (params?: { skip?: number; limit?: number; asset_id?: number; sentiment?: string; impact?: string }) => {
+    list: (params?: { skip?: number; limit?: number; asset_id?: number; sentiment?: string; impact?: string; category?: string; title_search?: string }) => {
         const qs = new URLSearchParams();
-        if (params) Object.entries(params).forEach(([k, v]) => v !== undefined && qs.append(k, String(v)));
+        if (params) Object.entries(params).forEach(([k, v]) => v !== undefined && v !== "" && qs.append(k, String(v)));
         return apiClient.get<Analysis[]>(`/analysis/?${qs}`);
+    },
+    count: (params?: { sentiment?: string; impact?: string; title_search?: string }) => {
+        const qs = new URLSearchParams();
+        if (params) Object.entries(params).forEach(([k, v]) => v !== undefined && v !== "" && qs.append(k, String(v)));
+        return apiClient.get<{ total: number }>(`/analysis/count?${qs}`);
     },
     getById: (id: number) => apiClient.get<Analysis>(`/analysis/${id}`),
     triggerForNews: (newsId: number) => apiClient.post<Analysis>(`/analysis/trigger/${newsId}`),
@@ -120,4 +131,57 @@ export const assetsApi = {
     list: (asset_type?: string) =>
         apiClient.get<Asset[]>(`/assets/${asset_type ? `?asset_type=${asset_type}` : ""}`),
     getById: (id: number) => apiClient.get<Asset>(`/assets/${id}`),
+};
+
+// ── Blogs ─────────────────────────────────────────────────────────────────────
+
+export const blogsApi = {
+    list: (includeHidden = false) =>
+        apiClient.get<Blog[]>(`/blogs/?include_hidden=${includeHidden}`),
+    listAdmin: () => apiClient.get<Blog[]>("/blogs/admin"),
+    getById: (id: number) => apiClient.get<Blog>(`/blogs/${id}`),
+    create: (data: BlogCreate) => apiClient.post<Blog>("/blogs/", data),
+    update: (id: number, data: BlogUpdate) => apiClient.patch<Blog>(`/blogs/${id}`, data),
+    delete: (id: number) => apiClient.delete<void>(`/blogs/${id}`),
+    toggleVisibility: (id: number, is_visible: boolean) =>
+        apiClient.patch<Blog>(`/blogs/${id}`, { is_visible }),
+};
+
+// ── Admin ─────────────────────────────────────────────────────────────────────
+
+export const adminApi = {
+    stats: () => apiClient.get<AdminStats>("/blogs/stats"),
+    listUsers: () => apiClient.get<UserWithSub[]>("/users/"),
+    deleteUser: (id: number) => apiClient.delete<void>(`/users/${id}`),
+    cancelSubscription: (userId: number) =>
+        apiClient.post<{ message: string }>(`/payments/admin/subscriptions/${userId}/cancel`, {}),
+    extendSubscription: (userId: number, days: number) =>
+        apiClient.post<{ message: string }>(`/payments/admin/subscriptions/${userId}/extend?days=${days}`, {}),
+};
+
+// ── Subscription ──────────────────────────────────────────────────────────────
+
+export interface CheckoutPayload {
+    plan_id: number;
+    card_number: string;
+    card_holder: string;
+    expiry: string;
+    cvc: string;
+}
+
+export interface CheckoutResult {
+    success: boolean;
+    subscription_id: number;
+    payment_id: number;
+    transaction_id: string;
+    amount: number;
+    card_last4: string;
+    status: string;
+}
+
+export const subscriptionApi = {
+    mySubscription: () => apiClient.get<SubscriptionInfo>("/users/me/subscription"),
+    subscribePro: () => apiClient.post<Subscription>("/payments/subscribe-pro", {}),
+    checkout: (payload: CheckoutPayload) =>
+        apiClient.post<CheckoutResult>("/payments/checkout", payload),
 };

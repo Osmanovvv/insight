@@ -8,11 +8,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from database.connection import get_db
-from database.models import Payment, Subscription, Users
+from database.models import Payment, Plan, Subscription, Users
 from schemas.payments import PaymentOut, SubscriptionOut
 from middlewares.auth_middleware import get_current_user, require_admin
 
 router = APIRouter()
+
+
+@router.get("/plans")
+async def list_plans(db: AsyncSession = Depends(get_db)):
+    """Публичный список тарифных планов."""
+    result = await db.execute(select(Plan).order_by(Plan.price))
+    return [
+        {"id": p.id, "name": p.name, "price": float(p.price), "features": p.features or []}
+        for p in result.scalars().all()
+    ]
 
 
 # ── Subscriptions ─────────────────────────────────────

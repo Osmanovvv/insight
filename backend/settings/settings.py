@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     news_data_api_key: str = ""
     mediastack_api_key: str = ""
     gnews_api_key: str = ""
+    # RSS (основной источник новостей, без ключей)
+    rss_feed_url: str = "https://ria.ru/export/rss2/index.xml"
 
     # Financial APIs
     alpha_vantage_key: str = ""

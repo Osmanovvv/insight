@@ -7,7 +7,7 @@
  *   const { messages, status } = useNotificationWs();
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { tokenStorage } from "@/lib/apiClient";
 import type { WsNotificationMessage } from "@/lib/types";
 
@@ -20,8 +20,9 @@ export function useNotificationWs() {
     const [status, setStatus] = useState<WsStatus>("disconnected");
     const wsRef = useRef<WebSocket | null>(null);
     const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const shouldReconnect = useRef(true);
 
-    const connect = () => {
+    const connect = useCallback(() => {
         const token = tokenStorage.getAccess();
         if (!token) return;
 
@@ -52,8 +53,9 @@ export function useNotificationWs() {
 
         ws.onclose = () => {
             setStatus("disconnected");
-            // Auto-reconnect after 5 seconds
-            reconnectTimer.current = setTimeout(connect, 5000);
+            if (shouldReconnect.current) {
+                reconnectTimer.current = setTimeout(connect, 5000);
+            }
         };
 
         // Send ping every 30 seconds to keep connection alive
@@ -64,16 +66,18 @@ export function useNotificationWs() {
         }, 30_000);
 
         return () => clearInterval(pingInterval);
-    };
+    }, []);
 
     useEffect(() => {
+        shouldReconnect.current = true;
         const cleanup = connect();
         return () => {
+            shouldReconnect.current = false;
             cleanup?.();
             if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
             wsRef.current?.close();
         };
-    }, []);
+    }, [connect]);
 
     const clearMessages = () => setMessages([]);
 

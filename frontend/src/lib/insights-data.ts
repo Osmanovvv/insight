@@ -4,7 +4,7 @@ export interface Insight {
   id: string;
   title: string;
   source: string;
-  category: 'Технологии' | 'Энергетика' | 'Крипто' | 'Финансы';
+  category: string;
   sentiment: 'positive' | 'neutral' | 'negative';
   impact: string;
   recommendation: string;

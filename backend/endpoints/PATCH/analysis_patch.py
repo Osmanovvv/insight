@@ -5,6 +5,7 @@ PATCH /api/v1/analysis — Update analysis (admin only)
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 
 from database.connection import get_db
 from database.models import Analysis, Users
@@ -22,7 +23,9 @@ async def update_analysis(
     _: Users = Depends(require_admin),
 ):
     """Обновить анализ (только admin — И)."""
-    result = await db.execute(select(Analysis).where(Analysis.id == analysis_id))
+    result = await db.execute(
+        select(Analysis).options(selectinload(Analysis.news)).where(Analysis.id == analysis_id)
+    )
     item = result.scalars().first()
     if not item:
         raise HTTPException(status_code=404, detail="Анализ не найден")
@@ -30,4 +33,9 @@ async def update_analysis(
         setattr(item, field, value)
     await db.commit()
     await db.refresh(item)
+    # Повторно подгружаем с связью news, т.к. refresh не загружает relationships
+    result2 = await db.execute(
+        select(Analysis).options(selectinload(Analysis.news)).where(Analysis.id == analysis_id)
+    )
+    item = result2.scalars().first()
     return item

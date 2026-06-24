@@ -45,6 +45,7 @@ class NewsOut(BaseModel):
     url: Optional[str] = None
     publication_date: Optional[datetime] = None
     category_id: Optional[int] = None
+    category_name: Optional[str] = None
     sentiment_score: Optional[float] = None
     impact_score: Optional[float] = None
 

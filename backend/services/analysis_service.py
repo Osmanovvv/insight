@@ -6,17 +6,18 @@ Sentiment analysis and impact scoring using Google Gemini AI.
 import json
 from typing import Optional
 from loguru import logger
-import google.generativeai as genai
+from google import genai
 
 from settings.settings import settings
 
-# Configure Gemini if key is provided
+# Configure Gemini client if key is provided
 if settings.gemini_api_key:
-    genai.configure(api_key=settings.gemini_api_key)
-    # Using gemini-1.5-flash as it's the fast, cost-effective model for this kind of task
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    client = genai.Client(api_key=settings.gemini_api_key)
+    # Using a fast, cost-effective model for this kind of task
+    _MODEL_ID = "gemini-2.5-flash"
 else:
-    model = None
+    client = None
+    _MODEL_ID = ""
 
 # Fallback basic heuristic if API fails or key is missing
 _POSITIVE = ["рост", "прибыль", "рекорд", "превысил", "позитивный", "growth", "profit", "bullish"]
@@ -46,13 +47,19 @@ def _fallback_analysis(text: str) -> dict:
     impact = "high" if high_hits >= 1 or total >= 5 else ("medium" if total >= 2 else "low")
     impact_score = 0.8 if impact == "high" else (0.4 + total * 0.05 if impact == "medium" else 0.1)
     
+    if sentiment == "positive":
+        rec = "Новость позитивна для рынка — стоит рассмотреть покупку активов соответствующего сектора."
+    elif sentiment == "negative":
+        rec = "Новость несёт негативный сигнал — рекомендуется соблюдать осторожность и сократить позиции в рискованных активах."
+    else:
+        rec = "Новость нейтральна — существенных изменений в портфеле не требуется, следите за развитием ситуации."
     return {
         "sentiment": sentiment,
         "sentiment_score": round(raw_score, 3),
         "impact": impact,
         "impact_score": min(round(impact_score, 3), 1.0),
         "confidence": min(0.5 + total * 0.05, 0.95),
-        "summary": text[:200].strip(),
+        "summary": rec,
     }
 
 
@@ -62,29 +69,32 @@ def analyze_article(title: str, content: Optional[str] = None) -> dict:
     Returns: {sentiment, impact, confidence, summary, sentiment_score, impact_score}
     """
     text = f"Title: {title}\n\nContent: {content or ''}"
-    
-    if not model:
+
+    if not client:
         logger.warning("Gemini API key not found. Using fallback analysis.")
         return _fallback_analysis(text)
 
     prompt = f"""
-    Analyze the following financial/economic news article. 
-    You must respond ONLY with a valid JSON object matching this exact structure:
-    {{
-      "sentiment": "positive" | "negative" | "neutral",
-      "sentiment_score": float between -1.0 (most negative) and 1.0 (most positive),
-      "impact": "high" | "medium" | "low",
-      "impact_score": float between 0.0 (no impact) and 1.0 (massive global impact),
-      "confidence": float between 0.0 and 1.0 (how confident are you in this assessment),
-      "summary": "String containing a concise 1-2 sentence summary of the news IN RUSSIAN LANGUAGE"
-    }}
+Ты — финансовый аналитик. Проанализируй новость и дай краткую инвестиционную рекомендацию.
+Отвечай ТОЛЬКО валидным JSON-объектом строго следующей структуры (без markdown-оберток):
+{{
+  "sentiment": "positive" | "negative" | "neutral",
+  "sentiment_score": число от -1.0 (самый негативный) до 1.0 (самый позитивный),
+  "impact": "high" | "medium" | "low",
+  "impact_score": число от 0.0 до 1.0 (сила влияния на рынок),
+  "confidence": число от 0.0 до 1.0 (уверенность в оценке),
+  "summary": "1-2 конкретные инвестиционные рекомендации на русском языке — какие активы, сектора или инструменты стоит рассмотреть или избегать в связи с этой новостью. Например: если нефть дорожает — присмотреться к акциям нефтяных компаний. Не пересказывай новость, давай только практический совет для портфеля."
+}}
 
-    Article Text:
-    {text}
-    """
+Текст новости:
+{text}
+"""
 
     try:
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model=_MODEL_ID,
+            contents=prompt,
+        )
         # Extract JSON from the response (sometimes Gemini wraps it in markdown backticks)
         result_text = response.text.strip()
         if result_text.startswith("```json"):

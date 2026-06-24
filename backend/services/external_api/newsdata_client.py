@@ -3,7 +3,7 @@ Insight IS — NewsData.io Client
 """
 
 from typing import List
-from datetime import datetime
+from datetime import datetime, timezone
 import httpx
 from loguru import logger
 
@@ -37,10 +37,16 @@ class NewsDataClient:
     @staticmethod
     def _normalize(a: dict) -> dict:
         pub = a.get("pubDate")
+        if pub:
+            s = str(pub).replace("Z", "+00:00")
+            dt = datetime.fromisoformat(s)
+            if dt.tzinfo:
+                dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+            pub = dt
         return {
             "title": a.get("title", ""),
             "content": a.get("content") or a.get("description", ""),
             "source": a.get("source_id", "NewsData"),
             "url": a.get("link"),
-            "publication_date": datetime.fromisoformat(pub) if pub else None,
+            "publication_date": pub,
         }

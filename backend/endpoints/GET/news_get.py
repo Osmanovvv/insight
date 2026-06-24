@@ -6,7 +6,6 @@ Access: all authenticated users (Ч per access matrix)
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import and_
 from typing import Optional
 from datetime import datetime
 
@@ -40,7 +39,10 @@ async def list_news(
     if date_to:
         filters.append(News.publication_date <= date_to)
 
-    query = select(News).where(and_(*filters)).order_by(News.publication_date.desc()).offset(skip).limit(limit)
+    query = select(News)
+    if filters:
+        query = query.where(*filters)
+    query = query.order_by(News.publication_date.desc()).offset(skip).limit(limit)
     result = await db.execute(query)
     return result.scalars().all()
 

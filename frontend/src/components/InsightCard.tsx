@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Insight } from "@/lib/insights-data";
+import { formatDateMSK } from "@/lib/utils";
 
 interface InsightCardProps {
   insight: Insight;
@@ -31,7 +32,7 @@ export const InsightCard = ({ insight, onClick }: InsightCardProps) => {
               <span className="text-xs text-muted-foreground">{insight.source}</span>
             </div>
             <h3 className="text-lg font-semibold mb-2">{insight.title}</h3>
-            <p className="text-xs text-muted-foreground">{insight.date}</p>
+            <p className="text-xs text-muted-foreground">{formatDateMSK(insight.date)}</p>
           </div>
           <div className={`p-2 rounded-lg ${config.bgColor}`}>
             <SentimentIcon className={`h-5 w-5 ${config.color}`} />

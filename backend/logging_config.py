@@ -3,10 +3,16 @@ Insight IS — Logging Configuration (loguru)
 """
 
 import sys
+import logging
 from loguru import logger
 
 
 def setup_logging():
+    # Подавляем шумные INFO-логи SQLAlchemy (SQL-запросы и транзакции)
+    for noisy in ("sqlalchemy.engine", "sqlalchemy.pool", "sqlalchemy.dialects",
+                  "sqlalchemy.orm", "asyncpg"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
+
     logger.remove()
 
     # Console

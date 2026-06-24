@@ -3,6 +3,8 @@ Insight IS — APScheduler Service
 Runs background tasks like fetching news every 30 seconds.
 """
 
+import asyncio
+from datetime import datetime, timezone
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from loguru import logger
 from sqlalchemy.future import select
@@ -12,8 +14,39 @@ from database.models import News, Analysis, UserCategory, Notification, Users, C
 from services.news_service import news_service
 from services.analysis_service import analyze_article
 from services.notification_service import manager
+from settings.constants import NEWS_FETCH_INTERVAL_SECONDS
 
 scheduler = AsyncIOScheduler()
+
+_CATEGORY_KEYWORDS = {
+    "Криптовалюты": ["bitcoin", "биткоин", "крипт", "ethereum", "эфир", "блокчейн", "blockchain", "btc", "eth", "токен", "nft"],
+    "Технологии": ["ai", " ии ", "искусственный интеллект", "нейросет", "google", "apple", "microsoft", "openai", "gemini", "чатgpt", "смартфон", "процессор", "it-", "технолог"],
+    "Энергетика": ["нефт", "газ", "газпром", "лукойл", "опек", "бензин", "энергет", "топлив", "электроэнерг", "brent", "wti"],
+    "Политика": ["президент", "правительств", "санкци", "парламент", "минист", "дипломат", "выбор", "путин", "байден", "нато", "оон"],
+    "Здравоохранение": ["здоров", "медиц", "больниц", "врач", "вакцин", "вирус", "covid", "фарма", "лекарств"],
+    "Промышленность": ["завод", "производств", "промышлен", "авто", "машиностро", "металлург", "сталь"],
+    "Финансы": ["банк", "кредит", "ипотек", "вклад", "инвест", "акци", "рынок", "биржа", "мосбирж", "рубл", "доллар", "евро", "цб "],
+    "Экономика": ["ввп", "инфляц", "экономик", "бюджет", "налог", "ставк", "рецесси"],
+}
+
+
+def _match_category(text: str) -> str:
+    """Подбирает категорию по ключевым словам. По умолчанию — Экономика."""
+    best_name, best_score = "Экономика", 0
+    for name, kws in _CATEGORY_KEYWORDS.items():
+        score = sum(1 for kw in kws if kw in text)
+        if score > best_score:
+            best_name, best_score = name, score
+    return best_name
+
+def _naive_utc(dt: datetime | None) -> datetime | None:
+    """Convert timezone-aware datetime to naive UTC for TIMESTAMP WITHOUT TIME ZONE."""
+    if dt is None:
+        return None
+    if dt.tzinfo is not None:
+        dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+    return dt
+
 
 async def fetch_and_analyze_news_job():
     logger.info("Starting scheduled job: fetch_and_analyze_news_job")
@@ -35,9 +68,10 @@ async def fetch_and_analyze_news_job():
                 if existing_news.scalars().first():
                     continue  # Skip already processed news
                 
-                # Fetch a default category to attach so notifications work.
-                # In production, we would map specific keywords to categories.
-                cat_result = await db.execute(select(Category).where(Category.name.in_(["Финансы", "Технологии", "Крипто", "Энергетика"])))
+                # Keyword-based категоризация по заголовку + контенту
+                text = f"{article_data.get('title','')} {article_data.get('content','')}".lower()
+                category_name = _match_category(text)
+                cat_result = await db.execute(select(Category).where(Category.name == category_name))
                 category = cat_result.scalars().first()
                 category_id = category.id if category else None
                 
@@ -46,7 +80,7 @@ async def fetch_and_analyze_news_job():
                     content=article_data.get("content", ""),
                     source=article_data.get("source", ""),
                     url=url,
-                    publication_date=article_data.get("publication_date"),
+                    publication_date=_naive_utc(article_data.get("publication_date")),
                     category_id=category_id
                 )
                 db.add(news)
@@ -112,11 +146,18 @@ async def fetch_and_analyze_news_job():
             await db.commit()
             logger.info("Finished scheduled job: fetch_and_analyze_news_job")
 
+    except asyncio.CancelledError:
+        logger.debug("fetch_and_analyze_news_job cancelled (shutdown)")
+        return  # не пробрасываем — задача завершается без исключения, APScheduler не логирует traceback
     except Exception as e:
         logger.error(f"Error in fetch_and_analyze_news_job: {e}")
 
-# Run every 30 seconds
-scheduler.add_job(fetch_and_analyze_news_job, "interval", seconds=30, id="fetch_news_30s")
+scheduler.add_job(
+    fetch_and_analyze_news_job,
+    "interval",
+    seconds=NEWS_FETCH_INTERVAL_SECONDS,
+    id="fetch_news",
+)
 
 def start_scheduler():
     if not scheduler.running:

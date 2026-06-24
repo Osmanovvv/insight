@@ -37,7 +37,7 @@ class UserCreate(BaseModel):
 
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    email: str   # принимает email ИЛИ username
     password: str
 
 

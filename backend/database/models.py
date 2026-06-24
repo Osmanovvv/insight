@@ -7,15 +7,20 @@ Insight IS — SQLAlchemy ORM Models
 """
 
 import enum
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import (
     BigInteger, Boolean, Column, DateTime, Enum, Float,
-    ForeignKey, Integer, Numeric, String, Text, UniqueConstraint,
+    ForeignKey, Integer, JSON, Numeric, String, Text, UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
 
 from database.connection import Base
+
+
+def utcnow() -> datetime:
+    """Naive UTC datetime (замена deprecated datetime.utcnow)."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 # ─── Enums ────────────────────────────────────────────────────────────────────
@@ -61,8 +66,8 @@ class Users(Base):
     first_name = Column(String(100), nullable=True)
     last_name = Column(String(100), nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=True, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=utcnow)
+    updated_at = Column(DateTime, nullable=True, onupdate=utcnow)
 
     # Relations
     notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
@@ -100,6 +105,10 @@ class News(Base):
     category = relationship("Category", back_populates="news")
     analyses = relationship("Analysis", back_populates="news", cascade="all, delete-orphan")
 
+    @property
+    def category_name(self) -> str | None:
+        return self.category.name if self.category else None
+
 
 class Asset(Base):
     """Финансовые активы (акции, крипто, сырьё и пр.)."""
@@ -126,7 +135,7 @@ class Analysis(Base):
     sentiment = Column(String(20), nullable=True)     # positive / negative / neutral
     impact = Column(String(20), nullable=True)        # high / medium / low
     confidence = Column(Float, nullable=True)         # 0.0 .. 1.0
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
+    created_at = Column(DateTime, nullable=False, default=utcnow, index=True)
 
     # Relations
     news = relationship("News", back_populates="analyses")
@@ -142,7 +151,7 @@ class Notification(Base):
     title = Column(String(255), nullable=False)
     message = Column(Text, nullable=False)
     is_read = Column(Boolean, nullable=False, default=False)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=utcnow)
 
     # Relations
     user = relationship("Users", back_populates="notifications")
@@ -155,7 +164,7 @@ class Plan(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     name = Column(String(100), unique=True, nullable=False)
     price = Column(Numeric(10, 2), nullable=False)
-    features = Column(Text, nullable=True)           # JSON string
+    features = Column(JSON, nullable=True)
 
     # Relations
     subscriptions = relationship("Subscription", back_populates="plan")
@@ -169,7 +178,7 @@ class Subscription(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     plan_id = Column(Integer, ForeignKey("plan.id"), nullable=False)
     status = Column(Enum(SubscriptionStatus), nullable=False, default=SubscriptionStatus.active)
-    started_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    started_at = Column(DateTime, nullable=False, default=utcnow)
     expires_at = Column(DateTime, nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
 
@@ -188,10 +197,23 @@ class Payment(Base):
     amount = Column(Numeric(10, 2), nullable=False)
     transaction_id = Column(String(255), unique=True, nullable=False)
     status = Column(Enum(PaymentStatus), nullable=False, default=PaymentStatus.pending)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=utcnow)
 
     # Relations
     subscription = relationship("Subscription", back_populates="payments")
+
+
+class Blog(Base):
+    """Блог-посты, создаваемые администратором."""
+    __tablename__ = "blog"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    title = Column(String(500), nullable=False)
+    content = Column(Text, nullable=False)
+    sources = Column(Text, nullable=True)          # JSON string — список ссылок
+    is_visible = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime, nullable=False, default=utcnow)
+    updated_at = Column(DateTime, nullable=True, onupdate=utcnow)
 
 
 class UserCategory(Base):

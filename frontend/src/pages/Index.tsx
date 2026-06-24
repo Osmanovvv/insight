@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -7,22 +7,37 @@ import { Card } from "@/components/ui/card";
 import { AuthModal } from "@/components/AuthModal";
 import { ArrowRight, Sparkles, TrendingUp, Bell, FileText } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
-import { isAuthenticated } from "@/lib/auth";
+import { isAuthenticated, getUser } from "@/lib/auth";
 
 const Index = () => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (isAuthenticated()) {
+      const user = getUser();
+      if (user?.role === "admin") {
+        navigate("/admin", { replace: true });
+      } else {
+        navigate("/blog", { replace: true });
+      }
+    }
+  }, [navigate]);
+
   const handleTryFree = () => {
     if (isAuthenticated()) {
-      navigate("/dashboard");
+      navigate("/blog");
     } else {
       setAuthModalOpen(true);
     }
   };
 
-  const handleAuthSuccess = () => {
-    navigate("/dashboard");
+  const handleAuthSuccess = (isAdmin?: boolean) => {
+    if (isAdmin) {
+      navigate("/admin");
+    } else {
+      navigate("/blog");
+    }
   };
 
   return (

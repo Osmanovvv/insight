@@ -52,6 +52,7 @@ export interface News {
     url?: string;
     publication_date?: string;
     category_id?: number;
+    category_name?: string | null;
     sentiment_score?: number;
     impact_score?: number;
 }
@@ -78,6 +79,7 @@ export interface Analysis {
     impact?: "high" | "medium" | "low";
     confidence?: number;
     created_at: string;
+    news?: News | null;
 }
 
 // ── Notifications ─────────────────────────────────────────────────────────────
@@ -125,6 +127,58 @@ export interface Asset {
     ticker: string;
     asset_type: "stock" | "crypto" | "commodity" | "forex" | "index";
     exchange?: string;
+}
+
+// ── Blogs ─────────────────────────────────────────────────────────────────────
+
+export interface Blog {
+    id: number;
+    title: string;
+    content: string;
+    sources?: string[] | null;
+    is_visible: boolean;
+    created_at: string;
+    updated_at?: string | null;
+}
+
+export interface BlogCreate {
+    title: string;
+    content: string;
+    sources?: string[];
+}
+
+export interface BlogUpdate {
+    title?: string;
+    content?: string;
+    sources?: string[];
+    is_visible?: boolean;
+}
+
+// ── Admin Stats ───────────────────────────────────────────────────────────────
+
+export interface AdminStats {
+    users_today: number;
+    news_today: number;
+    total_blogs: number;
+    total_users: number;
+    total_news: number;
+}
+
+// ── User with Subscription ────────────────────────────────────────────────────
+
+export interface UserWithSub extends User {
+    subscription_plan?: string | null;
+    subscription_expires?: string | null;
+    subscription_active: boolean;
+}
+
+// ── Subscription Info ─────────────────────────────────────────────────────────
+
+export interface SubscriptionInfo {
+    plan: string;
+    is_active: boolean;
+    expires_at?: string | null;
+    started_at?: string | null;
 }
 
 // ── Pagination ────────────────────────────────────────────────────────────────

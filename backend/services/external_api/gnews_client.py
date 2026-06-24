@@ -3,7 +3,7 @@ Insight IS — GNews Client (gnews.io)
 """
 
 from typing import List
-from datetime import datetime
+from datetime import datetime, timezone
 import httpx
 from loguru import logger
 
@@ -21,7 +21,9 @@ class GNewsClient:
         params = {
             "q": query,
             "max": min(max_results, 100),
-            "lang": "en",
+            # Русскоязычные новости
+            "lang": "ru",
+            "country": "ru",
             "sortby": "publishedAt",
             "token": self.api_key,
         }
@@ -38,10 +40,15 @@ class GNewsClient:
     @staticmethod
     def _normalize(a: dict) -> dict:
         pub = a.get("publishedAt")
+        if pub:
+            dt = datetime.fromisoformat(pub.replace("Z", "+00:00"))
+            if dt.tzinfo:
+                dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+            pub = dt
         return {
             "title": a.get("title", ""),
             "content": a.get("content") or a.get("description", ""),
             "source": a.get("source", {}).get("name", "GNews"),
             "url": a.get("url"),
-            "publication_date": datetime.fromisoformat(pub.replace("Z", "+00:00")) if pub else None,
+            "publication_date": pub,
         }

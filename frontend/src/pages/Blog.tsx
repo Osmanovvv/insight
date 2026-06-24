@@ -1,60 +1,41 @@
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Card } from "@/components/ui/card";
-import { Calendar, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Calendar, ExternalLink, Loader2 } from "lucide-react";
+import { blogsApi } from "@/lib/api";
+import type { Blog } from "@/lib/types";
 
-const Blog = () => {
-  const posts = [
-    {
-      title: "Топ-5 событий недели: как они повлияют на рынок",
-      excerpt: "Анализ ключевых новостей недели и их потенциальное влияние на основные индексы и отдельные акции.",
-      date: "15 января 2025",
-      readTime: "5 мин",
-      category: "Аналитика"
-    },
-    {
-      title: "Почему AI-анализ новостей экономит инвесторам деньги",
-      excerpt: "Исследование показывает, что своевременная реакция на новости с помощью AI может увеличить доходность портфеля на 15-20%.",
-      date: "12 января 2025",
-      readTime: "7 мин",
-      category: "AI & Технологии"
-    },
-    {
-      title: "Как интерпретировать корпоративные отчёты: гайд от Insight",
-      excerpt: "Подробное руководство по чтению квартальных отчётов компаний и выделению ключевых метрик.",
-      date: "8 января 2025",
-      readTime: "10 мин",
-      category: "Обучение"
-    },
-    {
-      title: "Макроэкономические индикаторы января: что важно знать",
-      excerpt: "Обзор основных макроэкономических показателей и их влияния на финансовые рынки в начале года.",
-      date: "5 января 2025",
-      readTime: "6 мин",
-      category: "Макроэкономика"
-    },
-    {
-      title: "Кейс: как Insight помог предсказать рост акций Tesla",
-      excerpt: "Реальный пример успешного использования AI-анализа для принятия инвестиционного решения.",
-      date: "2 января 2025",
-      readTime: "8 мин",
-      category: "Кейсы"
-    },
-    {
-      title: "Тренды 2025: что будет двигать рынки в этом году",
-      excerpt: "Прогнозы и аналитика главных драйверов роста для различных секторов экономики.",
-      date: "1 января 2025",
-      readTime: "12 мин",
-      category: "Прогнозы"
+const BlogPage = () => {
+  const [blogs, setBlogs] = useState<Blog[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedBlog, setSelectedBlog] = useState<Blog | null>(null);
+
+  useEffect(() => {
+    blogsApi.list(false)
+      .then(setBlogs)
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const formatDate = (dateStr: string) => {
+    try {
+      return new Date(dateStr).toLocaleDateString("ru-RU", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+    } catch {
+      return dateStr;
     }
-  ];
-
-  const categories = ["Все", "Аналитика", "AI & Технологии", "Обучение", "Кейсы", "Прогнозы"];
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      
+
       <main className="flex-1 pt-32 pb-24">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16 space-y-4">
@@ -66,63 +47,98 @@ const Blog = () => {
             </p>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-3 mb-12">
-            {categories.map((category) => (
-              <button
-                key={category}
-                className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
-                  category === "Все"
-                    ? "bg-accent text-accent-foreground"
-                    : "bg-card hover:bg-accent/10 border border-accent/20"
-                }`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="flex justify-center py-24">
+              <Loader2 className="h-8 w-8 animate-spin text-accent" />
+            </div>
+          ) : blogs.length === 0 ? (
+            <div className="text-center py-24">
+              <p className="text-xl text-muted-foreground">Публикации ещё не добавлены</p>
+              <p className="text-sm text-muted-foreground mt-2">Следите за обновлениями — мы готовим материалы для вас</p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {blogs.map((blog) => (
+                <Card
+                  key={blog.id}
+                  className="p-6 hover:glow-card transition-all border-accent/10 hover:border-accent/30 cursor-pointer group flex flex-col"
+                  onClick={() => setSelectedBlog(blog)}
+                >
+                  <h3 className="text-xl font-bold mb-3 group-hover:text-accent transition-colors line-clamp-2">
+                    {blog.title}
+                  </h3>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {posts.map((post, index) => (
-              <Card key={index} className="p-6 hover:glow-card transition-all border-accent/10 hover:border-accent/30 cursor-pointer group">
-                <div className="mb-4">
-                  <span className="inline-block px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-semibold">
-                    {post.category}
-                  </span>
-                </div>
-                
-                <h3 className="text-xl font-bold mb-3 group-hover:text-accent transition-colors">
-                  {post.title}
-                </h3>
-                
-                <p className="text-muted-foreground mb-4 line-clamp-3">
-                  {post.excerpt}
-                </p>
-                
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
+                  <p className="text-muted-foreground mb-4 line-clamp-4 flex-1 text-sm">
+                    {blog.content}
+                  </p>
+
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground mt-auto">
                     <Calendar className="h-4 w-4" />
-                    <span>{post.date}</span>
+                    <span>{formatDate(blog.created_at)}</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    <span>{post.readTime}</span>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-
-          <div className="mt-12 text-center">
-            <button className="px-8 py-3 rounded-lg border border-accent/50 hover:bg-accent/10 transition-colors font-medium">
-              Загрузить ещё статьи
-            </button>
-          </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </main>
 
       <Footer />
+
+      {/* Blog detail modal */}
+      <Dialog open={!!selectedBlog} onOpenChange={(o) => !o && setSelectedBlog(null)}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+          {selectedBlog && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-xl font-bold leading-snug pr-6">
+                  {selectedBlog.title}
+                </DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  {formatDate(selectedBlog.created_at)}
+                </p>
+              </DialogHeader>
+
+              <div className="py-2 whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
+                {selectedBlog.content}
+              </div>
+
+              {selectedBlog.sources && selectedBlog.sources.length > 0 && (
+                <div className="border-t border-border pt-4 mt-2">
+                  <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Источники</p>
+                  <ul className="space-y-1">
+                    {selectedBlog.sources.map((src, i) => (
+                      <li key={i}>
+                        <a
+                          href={src}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-accent hover:underline flex items-center gap-1"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          {src}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="pt-4">
+                <Button
+                  variant="outline"
+                  className="w-full border-accent/30"
+                  onClick={() => setSelectedBlog(null)}
+                >
+                  Закрыть
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
-export default Blog;
+export default BlogPage;

@@ -1,11 +1,11 @@
+"""Legacy bot state placeholder.
+
+The FastAPI application does not use aiogram. This module remains only for
+backward-compatible imports from older code.
 """
-Файл - с моделями машины состояний
-"""
-from aiogram.fsm.state import StatesGroup, State
 
 
-class BotState(StatesGroup):
-    """
-    Машина состояний для бота
-    """
+class BotState:
+    """No-op placeholder for removed bot FSM states."""
+
     pass
